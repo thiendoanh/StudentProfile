@@ -5,6 +5,10 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.ute.studentprofile.databinding.ActivityMainBinding
+import com.ute.studentprofile.utils.gone
+import com.ute.studentprofile.utils.toast
+import com.ute.studentprofile.utils.trimmedText
+import com.ute.studentprofile.utils.toAcademicRanking
 
 class MainActivity : AppCompatActivity() {
 
@@ -16,26 +20,28 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.tvTitle.apply {
-            text = "BÀI 2 - SCOPE FUNCTIONS"
-            textSize = 22f
-        }
-
         displayStudent(
             "Lâm Hùng Thiên Doanh",
             3.75,
             "2415053122206@ute.udn.vn"
         )
 
-        binding.btnLet.setOnClickListener {
+        val currentGpa = 3.75
+        binding.tvRanking.text = currentGpa.toAcademicRanking()
+
+        binding.btnUpdate.setOnClickListener {
+            updateStudentName()
+        }
+
+        binding.btnTestLet.setOnClickListener {
             testLet()
         }
 
-        binding.btnAlso.setOnClickListener {
+        binding.btnTestAlso.setOnClickListener {
             testAlso()
         }
 
-        binding.btnRun.setOnClickListener {
+        binding.btnTestRun.setOnClickListener {
             testRun()
         }
     }
@@ -49,48 +55,51 @@ class MainActivity : AppCompatActivity() {
             tvName.text = "Họ tên: $name"
             tvGpa.text = "GPA: $gpa"
             tvEmail.text = "Email: $email"
+            btnUpdate.isEnabled = true
+        }
+    }
+
+    private fun updateStudentName() {
+        val name = binding.edtName.trimmedText()
+
+        if (name.isNotBlank()) {
+            binding.tvName.text = "Họ tên: $name"
+            toast("Đã cập nhật thông tin")
+        } else {
+            toast("Vui lòng nhập tên")
         }
     }
 
     private fun testLet() {
-        val name = binding.edtName.text
-            .toString()
+        val name: String? = binding.edtName
+            .trimmedText()
             .takeIf { it.isNotBlank() }
 
         name?.let { validName ->
             binding.tvName.text = "Họ tên: $validName"
 
-            Toast.makeText(
-                this,
-                "let đã xử lý tên: $validName",
-                Toast.LENGTH_SHORT
-            ).show()
+            toast("let đã xử lý tên: $validName")
         } ?: run {
-            Toast.makeText(
-                this,
-                "Tên đang rỗng",
-                Toast.LENGTH_SHORT
-            ).show()
+            toast("Tên đang rỗng")
         }
     }
 
     private fun testAlso() {
-        val score = 3.75.also {
-            Log.d("STUDENT_AUDIT", "GPA ban đầu: $it")
-        }
+        val score = 3.75
+            .also {
+                Log.d("STUDENT_AUDIT", "GPA ban đầu: $it")
+            }
+            .also {
+                toast("GPA hiện tại: $it")
+            }
 
         binding.tvGpa.text = "GPA: $score"
-
-        Toast.makeText(
-            this,
-            "GPA hiện tại: $score",
-            Toast.LENGTH_SHORT
-        ).show()
+        binding.tvRanking.text = score.toAcademicRanking()
     }
 
     private fun testRun() {
-        val result = binding.edtName.text
-            .toString()
+        val result = binding.edtName
+            .trimmedText()
             .takeIf { it.isNotBlank() }
             ?.run {
                 uppercase()
@@ -101,10 +110,6 @@ class MainActivity : AppCompatActivity() {
 
         binding.tvName.text = "Họ tên: $result"
 
-        Toast.makeText(
-            this,
-            "run đã được thực hiện",
-            Toast.LENGTH_SHORT
-        ).show()
+        toast("run đã được thực hiện")
     }
 }

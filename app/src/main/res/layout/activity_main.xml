@@ -15,7 +15,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="BÀI 2 - SCOPE FUNCTIONS"
+            android:text="BÀI 3 - EXTENSION FUNCTIONS"
             android:textSize="22sp"
             android:textStyle="bold" />
 
@@ -36,6 +36,14 @@
             android:textSize="18sp" />
 
         <TextView
+            android:id="@+id/tvRanking"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Xếp loại:"
+            android:textSize="18sp" />
+
+        <TextView
             android:id="@+id/tvEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -51,21 +59,28 @@
             android:hint="Nhập tên sinh viên" />
 
         <Button
-            android:id="@+id/btnLet"
+            android:id="@+id/btnUpdate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:text="Cập nhật tên" />
+
+        <Button
+            android:id="@+id/btnTestLet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:text="Test let" />
 
         <Button
-            android:id="@+id/btnAlso"
+            android:id="@+id/btnTestAlso"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="Test also" />
 
         <Button
-            android:id="@+id/btnRun"
+            android:id="@+id/btnTestRun"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
