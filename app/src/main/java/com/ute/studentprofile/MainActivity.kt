@@ -1,115 +1,161 @@
 package com.ute.studentprofile
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doOnTextChanged
 import com.ute.studentprofile.databinding.ActivityMainBinding
-import com.ute.studentprofile.utils.gone
-import com.ute.studentprofile.utils.toast
-import com.ute.studentprofile.utils.trimmedText
-import com.ute.studentprofile.utils.toAcademicRanking
+import com.ute.studentprofile.model.Student
+import com.ute.studentprofile.utils.*
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    private val defaultStudent = Student(
+        id = "2415053122206",
+        name = "Lâm Hưng Thiên Doanh",
+        className = "126TLTTD01",
+        email = "2415053122206@sv.ute.udn.vn",
+        gpa = 3.75
+    )
+
+    private var currentStudent = defaultStudent
+
+    companion object {
+        private const val KEY_STUDENT_DATA = "KEY_STUDENT"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        displayStudent(
-            "Lâm Hùng Thiên Doanh",
-            3.75,
-            "2415053122206@ute.udn.vn"
-        )
-
-        val currentGpa = 3.75
-        binding.tvRanking.text = currentGpa.toAcademicRanking()
-
-        binding.btnUpdate.setOnClickListener {
-            updateStudentName()
+        savedInstanceState?.let { bundle ->
+            (bundle.getSerializable(KEY_STUDENT_DATA) as? Student)?.let { savedStudent ->
+                currentStudent = savedStudent
+            }
         }
 
-        binding.btnTestLet.setOnClickListener {
-            testLet()
+        bindStudentData(currentStudent)
+        setupRealtimeValidation()
+
+        binding.btnUpdateGpa.setOnClickListener {
+            handleUpdateGpa()
         }
 
-        binding.btnTestAlso.setOnClickListener {
-            testAlso()
+        binding.btnReset.setOnClickListener {
+            showResetConfirmationDialog()
         }
 
-        binding.btnTestRun.setOnClickListener {
-            testRun()
+        binding.btnSendReport.setOnClickListener {
+            sendAcademicReportEmail()
         }
     }
 
-    private fun displayStudent(
-        name: String,
-        gpa: Double,
-        email: String
-    ) {
+    private fun bindStudentData(student: Student) {
         with(binding) {
-            tvName.text = "Họ tên: $name"
-            tvGpa.text = "GPA: $gpa"
-            tvEmail.text = "Email: $email"
-            btnUpdate.isEnabled = true
+            tvStudentName.text = student.name
+            tvStudentDetails.text = "MSSV: ${student.id} | Lớp: ${student.className}"
+            tvStudentEmail.text = "Email: ${student.email}"
+
+            tvGpaBadge.text = "${student.gpa} GPA - ${student.gpa.toAcademicRanking()}"
+            tvGpaBadge.setTextColor(student.gpa.toRankingColor())
+
+            edtGpaInput.setText(student.gpa.toString())
         }
     }
 
-    private fun updateStudentName() {
-        val name = binding.edtName.trimmedText()
-
-        if (name.isNotBlank()) {
-            binding.tvName.text = "Họ tên: $name"
-            toast("Đã cập nhật thông tin")
-        } else {
-            toast("Vui lòng nhập tên")
+    private fun setupRealtimeValidation() {
+        binding.edtGpaInput.doOnTextChanged { text, _, _, _ ->
+            val input = text?.toString()?.trim() ?: ""
+            if (input.isNotEmpty()) {
+                binding.edtGpaInput.error = null
+                val tempScore = input.toDoubleOrNull()
+                if (tempScore != null && tempScore in 0.0..4.0) {
+                    binding.tvPreviewRanking.text = "Dự kiến: ${tempScore.toAcademicRanking()}"
+                    binding.tvPreviewRanking.show()
+                } else {
+                    binding.tvPreviewRanking.gone()
+                }
+            } else {
+                binding.tvPreviewRanking.gone()
+            }
         }
     }
 
-    private fun testLet() {
-        val name: String? = binding.edtName
-            .trimmedText()
-            .takeIf { it.isNotBlank() }
+    private fun handleUpdateGpa() {
+        val rawInput = binding.edtGpaInput.trimmedText()
+        val newGpa = rawInput.toDoubleOrNull()
 
-        name?.let { validName ->
-            binding.tvName.text = "Họ tên: $validName"
+        if (newGpa == null || newGpa !in 0.0..4.0) {
+            binding.edtGpaInput.error = "Vui lòng nhập GPA hợp lệ (0.0 - 4.0)"
+            binding.edtGpaInput.requestFocus()
+            toast("Điểm số không hợp lệ, vui lòng kiểm tra lại!")
+            return
+        }
 
-            toast("let đã xử lý tên: $validName")
-        } ?: run {
-            toast("Tên đang rỗng")
+        binding.edtGpaInput.error = null
+        binding.tvPreviewRanking.gone()
+
+        currentStudent = currentStudent.copy(gpa = newGpa)
+        bindStudentData(currentStudent)
+        toast("Đã cập nhật GPA thành công!")
+    }
+
+    private fun showResetConfirmationDialog() {
+        AlertDialog.Builder(this).apply {
+            setTitle("Xác nhận khôi phục")
+            setMessage("Bạn có chắc chắn muốn đặt lại điểm GPA ban đầu (${defaultStudent.gpa}) không?")
+            setPositiveButton("Đồng ý") { dialog, _ ->
+                currentStudent = defaultStudent
+                bindStudentData(currentStudent)
+                binding.tvPreviewRanking.gone()
+                binding.edtGpaInput.error = null
+                toast("Đã khôi phục dữ liệu mặc định!")
+                dialog.dismiss()
+            }
+            setNegativeButton("Hủy") { dialog, _ ->
+                dialog.dismiss()
+            }
+        }.show()
+    }
+
+    private fun sendAcademicReportEmail() {
+        val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:${currentStudent.email}")
+            putExtra(
+                Intent.EXTRA_SUBJECT,
+                "[Báo cáo học tập] Sinh viên ${currentStudent.name} - MSSV ${currentStudent.id}"
+            )
+            putExtra(
+                Intent.EXTRA_TEXT,
+                """
+                Kính gửi Sinh viên / Phụ huynh,
+                
+                Dưới đây là thông tin báo cáo kết quả học tập hiện tại:
+                - Họ và tên: ${currentStudent.name}
+                - MSSV: ${currentStudent.id}
+                - Lớp sinh hoạt: ${currentStudent.className}
+                - Điểm tích lũy GPA: ${currentStudent.gpa} / 4.0
+                - Xếp loại học lực: ${currentStudent.gpa.toAcademicRanking()}
+                
+                Trân trọng!
+                """.trimIndent()
+            )
+        }
+
+        try {
+            startActivity(emailIntent)
+        } catch (e: Exception) {
+            toast("Không tìm thấy ứng dụng Email nào trên thiết bị!")
         }
     }
 
-    private fun testAlso() {
-        val score = 3.75
-            .also {
-                Log.d("STUDENT_AUDIT", "GPA ban đầu: $it")
-            }
-            .also {
-                toast("GPA hiện tại: $it")
-            }
-
-        binding.tvGpa.text = "GPA: $score"
-        binding.tvRanking.text = score.toAcademicRanking()
-    }
-
-    private fun testRun() {
-        val result = binding.edtName
-            .trimmedText()
-            .takeIf { it.isNotBlank() }
-            ?.run {
-                uppercase()
-            }
-            ?: run {
-                "CHƯA NHẬP TÊN"
-            }
-
-        binding.tvName.text = "Họ tên: $result"
-
-        toast("run đã được thực hiện")
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putSerializable(KEY_STUDENT_DATA, currentStudent)
     }
 }
